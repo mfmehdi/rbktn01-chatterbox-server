@@ -12,7 +12,7 @@ this file and include it in basic-server.js so that it actually works.
 
 **************************************************************/
 
-var requestHandler = function(request, response) {
+var requestHandler = function (request, response) {
   // Request and Response come from node's http module.
   //
   // They include information about both the incoming request, such as
@@ -27,14 +27,14 @@ var requestHandler = function(request, response) {
   // Adding more logging to your server can be an easy way to get passive
   // debugging help, but you should always be careful about leaving stray
   // console.logs in your code.
-  console.log('Serving request type ' + request.method + ' for url ' + request.url);
+
+  console.log('Serving request type ' + request.method + ' for url =====>' + request.url);
 
   // The outgoing status.
   var statusCode = 200;
 
   // See the note below about CORS headers.
   var headers = defaultCorsHeaders;
-
   // Tell the client we are sending them plain text.
   //
   // You will need to change this if you are sending something
@@ -44,17 +44,49 @@ var requestHandler = function(request, response) {
   // .writeHead() writes to the request line and headers of the response,
   // which includes the status and all headers.
   response.writeHead(statusCode, headers);
+  var result = [{
+    text: 'hello world',
+    username: 'fred',
+    objectId: objectIdCounter
+  }];
 
   // Make sure to always call response.end() - Node may not send
   // anything back to the client until you do. The string you pass to
   // response.end() will be the body of the response - i.e. what shows
   // up in the browser.
-  //
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
-  response.end('Hello, World!');
-};
+  if (request.url === '/classes/messages') {
+    if (request.method === 'GET') {
+      response.writeHead(200, headers);
+      response.end(JSON.stringify({ results: result }));
+    }
+    else {
 
+      if (request.method === 'POST') {
+        var body = ''
+        request.on('data', (data) => {
+          body += data
+        })
+        request.on('end', () => {
+          var msg = JSON.parse(body);
+          result.push(msg)
+          response.writeHead(201, headers);
+          response.end(JSON.stringify({ results: result }))
+        });
+
+      }
+
+    }
+  }
+
+  else {
+    response.writeHead(404, headers);
+    response.end(JSON.stringify("error"));
+  }
+
+}
+exports.handleRequest = requestHandler;
 // These headers will allow Cross-Origin Resource Sharing (CORS).
 // This code allows this server to talk to websites that
 // are on different domains, for instance, your chat client.
